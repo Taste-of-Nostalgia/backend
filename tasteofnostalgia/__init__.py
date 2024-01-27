@@ -18,4 +18,7 @@ API_IDENTIFIER = env.get("API_IDENTIFIER")
 ALGORITHMS = ["RS256"]
 APP = Flask(__name__)
 
-from tasteofnostalgia import routes
+if not AUTH0_DOMAIN or not API_IDENTIFIER:
+    print("WARNING: AUTH0_DOMAIN or API_IDENTIFIER not specified in .env")
+
+from tasteofnostalgia import routes, server, verify#, auth0

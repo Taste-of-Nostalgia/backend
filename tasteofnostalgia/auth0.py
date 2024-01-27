@@ -10,14 +10,7 @@ from flask import Flask, request, jsonify, _request_ctx_stack, Response
 from flask_cors import cross_origin
 from jose import jwt
 
-ENV_FILE = find_dotenv()
-if ENV_FILE:
-    load_dotenv(ENV_FILE)
-AUTH0_DOMAIN = env.get("AUTH0_DOMAIN")
-API_IDENTIFIER = env.get("API_IDENTIFIER")
-ALGORITHMS = ["RS256"]
-APP = Flask(__name__)
-
+from tasteofnostalgia import APP, AUTH0_DOMAIN, API_IDENTIFIER, ALGORITHMS
 
 # Format error response and append status code.
 class AuthError(Exception):
@@ -151,6 +144,7 @@ def requires_auth(func):
 # Controllers API
 @APP.route("/api/public")
 @cross_origin(headers=["Content-Type", "Authorization"])
+@cross_origin(headers=["Access-Control-Allow-Origin", "*"])
 def public():
     """No access token required to access this route
     """
@@ -158,9 +152,10 @@ def public():
     return jsonify(message=response)
 
 
+# @cross_origin(headers=["Access-Control-Allow-Origin", "http://localhost:3000"])
 @APP.route("/api/private")
 @cross_origin(headers=["Content-Type", "Authorization"])
-@cross_origin(headers=["Access-Control-Allow-Origin", "http://localhost:3000"])
+@cross_origin(headers=["Access-Control-Allow-Origin", "*"])
 @requires_auth
 def private():
     """A valid access token is required to access this route
@@ -183,7 +178,3 @@ def private_scoped():
         "code": "Unauthorized",
         "description": "You don't have access to this resource"
     }, 403)
-
-
-if __name__ == "__main__":
-    APP.run(host="0.0.0.0", port=env.get("PORT", 3010), debug=True)
