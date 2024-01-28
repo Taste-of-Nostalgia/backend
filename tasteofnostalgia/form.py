@@ -8,6 +8,8 @@ from tasteofnostalgia import food_collection
 from tasteofnostalgia.verify import get_user_id
 from flask_cors import cross_origin
 from bson import Binary
+import json
+
 
 @APP.route('/userid')
 @cross_origin(headers=["Access-Control-Allow-Origin", "*"])
@@ -58,31 +60,72 @@ def get_user():
 def recommendation():
     co = cohere.Client('BSnGEJ95ZX7mMUasrq7Au6iFXtfz0VkGXrUOxiD2')
     food = ['Spicy Wontons', 'Subway Sandwich', 'Big Mac', 'Pizza Pizza', 'Ramen Noodles']
-    results = [result for result in food_collection.find({"userId": get_user_id()})]
-    results[0].name 
-    ratings = [1, 4, 3, 4, 5]
-    for i in range(len(ratings)):
-         if (ratings[i] == 1):
-            ratings[i] = "very bad"
-         elif (ratings[i] == 2):
-            ratings[i] = "bad"
-         elif (ratings[i] == 3):
-            ratings[i] = "ok"
-         elif (ratings[i] == 4):
-            ratings[i] = "good"
-         else:
-            ratings[i] = "very good"
-    date = ['Jan 25, 2024', 'Jan 20, 2024', 'Jan 15, 2024', 'Jan 10, 2024', 'Jan 5, 2024']
-    prompt = "Based on this information, suggest the top 3 foods similar to one that the user has ranked highly and hasn't eaten recently: "
+    # results = [result for result in food_collection.find({"userId": get_user_id()})]
+    results = [result for result in food_collection.find({"userId": '65b5ae5bcf5539f8e9c1abcb'})]
+    food_name = []
+    ratings = []
+    date = []
+    for j in range(len(results)):
+        food_name.append((results[j])['name'])
+        ratings.append((results[j])['rating'])
+        date.append((results[j])['date'])
+    
     info = ''
     for i in range(len(food)):
-        info += food[i] + " - eaten " + date[i] + ": " + ratings[i] + "\n"
-    print("Prompt: " + prompt + "\n" + info)
-    prompt += "\n" + info
-    response = co.generate(prompt=prompt).data[0].text
-    prompt = "Based on this information, describe the highest rated food? \n" + info
-    response2 = co.generate(prompt=prompt).data[0].text
+        info += food_name[i] + " - eaten " + date[i] + ": " + str(ratings[i]) + "/5\n"
 
-    print("Response 1:" + (response))
-    print("Response 2:" + (response))
-    return response2
+    prompt1 = "Based on this information, what is the number 1 food similar to food that the user has ranked highly and hasn't eaten recently (answer with the symbol #1 followed by the food name: description):\n" + info
+    prompt2 = "Based on this information, what is the number 1 rated food? (answer with the symbol #1 followed by : and a short description)\n" + info
+    prompt3 = "Based on this information, what is the number 1 creative food that is not on the list (answer with the symbol #1 followed by the food name: description):\n" + info 
+   
+    response1 = co.generate(prompt=prompt1).data[0].text
+    response2 = co.generate(prompt=prompt2).data[0].text
+    response3 = co.generate(prompt=prompt3).data[0].text
+
+    print("Prompt1: " + prompt1 + "\n" + info)
+    print("Response1: " + response1)
+    print("Prompt2: " + prompt2 + "\n" + info)
+    print("Response2: " + response2)
+    print("Prompt3: " + prompt3 + "\n" + info)
+    print("Response3: " + response3)
+
+    # Find the index of "1."
+    index_of_1_v1 = response1.find("#1")
+    index_of_1_v2 = response2.find("#1:")
+    index_of_1_v3 = response3.find("#1")
+
+    index_of_2_v1 = response1.find("2.")
+    index_of_2_v3 = response3.find("2.")
+
+    titles=[]
+    descriptions=[]
+    
+    if index_of_1_v1 != -1:
+            # Find the index of ":"
+            index_of_colon = response1.find(":", index_of_1_v1)
+            if index_of_colon != -1:
+               # Extract the substring starting from "1." to ":"
+               titles.append(response1[index_of_1_v1+3:index_of_colon].strip())
+               descriptions.append(response1[index_of_colon + 3:index_of_2_v1].strip())
+   
+    if index_of_1_v2 != -1:
+            index_of_colon = response1.find(":", index_of_1_v2)
+            if index_of_colon != -1:
+               # Extract the substring starting from "1." to ":"
+               titles.append(response2[index_of_1_v2+3:index_of_colon].strip())
+               descriptions.append(response1[index_of_colon + 2:].strip())
+
+    if index_of_1_v3 != -1:
+            # Find the index of ":"
+            index_of_colon = response1.find(":", index_of_1_v3)
+            if index_of_colon != -1:
+                # Extract the substring starting from "1." to ":"
+                titles.append(response1[index_of_1_v3+3:index_of_colon].strip())
+                descriptions.append(response1[index_of_colon + 3:index_of_2_v3].strip())
+    
+    data_dict = {key: value for key, value in zip(titles, descriptions)}
+   
+   # Convert the dictionary to a JSON-formatted string
+    json_data = json.dumps(data_dict)
+    print(response1 + "\n" + response2 + "\n" + response3)
+    return json_data
