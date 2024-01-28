@@ -1,24 +1,41 @@
 
 # importing Flask and other modules
-from flask import request, render_template, send_file 
-from tasteofnostalgia import APP
-from flask import jsonify 
+from flask import Flask, request, jsonify, render_template
+from tasteofnostalgia import users, APP
+import cohere
 from tasteofnostalgia import users
- 
+from tasteofnostalgia import food_collection
+from bson import Binary
+
 # A decorator used to tell the application
 # which URL is associated function
-@APP.route('/', methods =["GET", "POST"])
-def gfg():
-   if request.method == "POST":
-      foodName = request.form.get("foodName")
-      rating = request.form.get("rating") 
-      file = request.files.get("file")
-      if file:
-            file.save("uploads/" + file.filename)
-            return "Your food is " + foodName + ". Your rating is " + rating + ". File saved as " + file.filename + "."
-      else:
-         return "No file uploaded."
-   return render_template("form.html")
+@APP.route('/input_food', methods=["POST"])
+def input_food():
+    if request.method == "POST":
+        food_name = request.form.get("foodName")
+        rating = int(request.form.get("rating"))  # Convert to integer if needed
+
+        # Save the file to the 'uploads' directory
+        file = request.files.get("file")
+        if file:
+            file_path = "uploads/" + file.filename
+            file.save(file_path)
+
+            # Prepare the data to be inserted into MongoDB
+            data = {
+                'name': food_name,
+                'rating': rating,
+                'photo': Binary(file.read()),  # Convert file content to BSON Binary
+            }
+
+            # Insert data into MongoDB
+            result = food_collection.insert_one(data)
+
+            # Return a response with the inserted document ID
+            return jsonify({"status": "success", 'name': food_name, 'rating': rating, 'photo': Binary(file.read()),})
+        else:
+            return jsonify({"status": "error", "message": "No file uploaded."})
+    return ''
 
 @APP.route('/create_user')
 def create_user():
@@ -28,3 +45,16 @@ def create_user():
 @APP.route('/get_user')
 def get_user():
     return users.find_one({"email": "test@gmail.com", "password":"password"})
+
+@APP.route("/recommendations")
+def recommendation():
+    co = cohere.Client('BSnGEJ95ZX7mMUasrq7Au6iFXtfz0VkGXrUOxiD2')
+    food = ['Spicy Wontons', 'Subway Sandwich', 'Big Mac', 'Pizza Pizza']
+    ratings = [1, 4, 3, 4, 5]
+    date = ['Jan 25, 2024', 'Jan 20, 2024', 'Jan 15, 2024', 'Jan 10, 2024', 'Jan 5, 2024']
+    prompt = "Based on this information, suggest a food similar to one that the user has ranked highly and hasn't eaten recently: "
+    for i in range(len(food)):
+        prompt+="\n" + food[i] + " - eaten " + date[i] + ": " + ratings[i] + "/5 "
+    print("Prompt: " + prompt)
+    response = co.generate(prompt=prompt,)
+    print("Cohere:" + response)

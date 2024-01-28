@@ -21,6 +21,8 @@ ALGORITHMS = ["RS256"]
 APP = Flask(__name__)
 
 client = MongoClient("mongodb+srv://onlineuser:$k25DsumFLfXEtF@discord-bot-online-judg.7gm4i.mongodb.net/", tlsCAFile=certifi.where())['taste-of-nostalgia']
+db = client['taste-of-nostalgia']
 users = client['users']
+food_collection = client['food']
 
 from tasteofnostalgia import form

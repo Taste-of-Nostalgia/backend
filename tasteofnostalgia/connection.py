@@ -24,5 +24,5 @@ from tasteofnostalgia import users
 
 client = MongoClient("mongodb+srv://onlineuser:$k25DsumFLfXEtF@discord-bot-online-judg.7gm4i.mongodb.net/", tlsCAFile=certifi.where())['taste-of-nostalgia']
 
-users = client['users']
-users.find_one({"name": "Alisa", "age": 18})
+#users = client['users']
+#users.find_one({"name": "Alisa", "age": 18})
