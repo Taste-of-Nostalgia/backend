@@ -7,7 +7,7 @@ from six.moves.urllib.request import urlopen
 
 from dotenv import load_dotenv, find_dotenv
 from flask import Flask, request, jsonify, _request_ctx_stack, Response
-from flask_cors import cross_origin
+from flask_cors import CORS
 from jose import jwt
 
 from pymongo import MongoClient
@@ -19,6 +19,7 @@ AUTH0_DOMAIN = env.get("AUTH0_DOMAIN")
 API_IDENTIFIER = env.get("API_IDENTIFIER")
 ALGORITHMS = ["RS256"]
 APP = Flask(__name__)
+CORS(APP)
 
 client = MongoClient("mongodb+srv://onlineuser:$k25DsumFLfXEtF@discord-bot-online-judg.7gm4i.mongodb.net/", tlsCAFile=certifi.where())['taste-of-nostalgia']
 db = client['taste-of-nostalgia']
