@@ -1,5 +1,5 @@
 from functools import wraps
-import json
+import json, certifi
 from os import environ as env
 from typing import Dict
 
@@ -10,6 +10,8 @@ from flask import Flask, request, jsonify, _request_ctx_stack, Response
 from flask_cors import cross_origin
 from jose import jwt
 
+from pymongo import MongoClient
+
 ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
@@ -18,4 +20,7 @@ API_IDENTIFIER = env.get("API_IDENTIFIER")
 ALGORITHMS = ["RS256"]
 APP = Flask(__name__)
 
-from tasteofnostalgia import routes
+client = MongoClient("mongodb+srv://onlineuser:$k25DsumFLfXEtF@discord-bot-online-judg.7gm4i.mongodb.net/", tlsCAFile=certifi.where())['taste-of-nostalgia']
+users = client['users']
+
+from tasteofnostalgia import form
