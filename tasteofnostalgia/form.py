@@ -80,9 +80,9 @@ def recommendation():
     for i in range(len(food)):
         info += food_name[i] + " - eaten " + date[i] + ": " + str(ratings[i]) + "/5\n"
 
-    prompt1 = "Based on this information, what is the number 1 food similar to food that the user has ranked highly and hasn't eaten recently (answer with the symbol #1 followed by the food name: description):\n" + info
-    prompt2 = "Based on this information, what is the number 1 rated food? (answer with the symbol #1 followed by : and a short description)\n" + info
-    prompt3 = "Based on this information, what is the number 1 creative food that is not on the list (answer with the symbol #1 followed by the food name: description):\n" + info 
+    prompt1 = "Based on this information, what is the number 1 food similar to food that the user has ranked highly and hasn't eaten recently (answer with the symbol #1 followed by the food name: description):" + info
+    prompt2 = "Based on this information, what is the number 1 rated food? (answer with the symbol #1 followed by the food name - description):" + info
+    prompt3 = "Based on this information, what is the number 1 creative food that is not on the list (answer with the symbol #1 followed by the food name: description):" + info 
    
     response1 = co.generate(prompt=prompt1).data[0].text
     response2 = co.generate(prompt=prompt2).data[0].text
@@ -97,11 +97,8 @@ def recommendation():
 
     # Find the index of "1."
     index_of_1_v1 = response1.find("#1")
-    index_of_1_v2 = response2.find("#1:")
+    index_of_1_v2 = response2.find("#1")
     index_of_1_v3 = response3.find("#1")
-
-    index_of_2_v1 = response1.find("2.")
-    index_of_2_v3 = response3.find("2.")
 
     titles=[]
     descriptions=[]
@@ -112,22 +109,22 @@ def recommendation():
             if index_of_colon != -1:
                # Extract the substring starting from "1." to ":"
                titles.append(response1[index_of_1_v1+3:index_of_colon].strip())
-               descriptions.append(response1[index_of_colon + 3:index_of_2_v1].strip())
+               descriptions.append(response1[index_of_colon + 2:].strip())
    
     if index_of_1_v2 != -1:
-            index_of_colon = response1.find(":", index_of_1_v2)
+            index_of_colon = response2.find(" - ", index_of_1_v2)
             if index_of_colon != -1:
                # Extract the substring starting from "1." to ":"
                titles.append(response2[index_of_1_v2+3:index_of_colon].strip())
-               descriptions.append(response1[index_of_colon + 2:].strip())
+               descriptions.append(response2[index_of_colon + 3:].strip())
 
     if index_of_1_v3 != -1:
             # Find the index of ":"
-            index_of_colon = response1.find(":", index_of_1_v3)
+            index_of_colon = response3.find(":", index_of_1_v3)
             if index_of_colon != -1:
                 # Extract the substring starting from "1." to ":"
-                titles.append(response1[index_of_1_v3+3:index_of_colon].strip())
-                descriptions.append(response1[index_of_colon + 3:index_of_2_v3].strip())
+                titles.append(response3[index_of_1_v3+3:index_of_colon].strip())
+                descriptions.append(response3[index_of_colon + 2:].strip())
     
     data_dict = {key: value for key, value in zip(titles, descriptions)}
    
