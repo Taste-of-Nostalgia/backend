@@ -9,7 +9,7 @@ from bson import Binary
 
 # A decorator used to tell the application
 # which URL is associated function
-@APP.route('/input_food', methods=["POST"])
+@APP.route('/input_food', methods=["GET", "POST"])
 def input_food():
     if request.method == "POST":
         food_name = request.form.get("foodName")
@@ -25,17 +25,17 @@ def input_food():
             data = {
                 'name': food_name,
                 'rating': rating,
-                'photo': Binary(file.read()),  # Convert file content to BSON Binary
+                'photo': file_path,  # Convert file content to BSON Binary
             }
 
             # Insert data into MongoDB
             result = food_collection.insert_one(data)
 
             # Return a response with the inserted document ID
-            return jsonify({"status": "success", 'name': food_name, 'rating': rating, 'photo': Binary(file.read()),})
+            return jsonify({"status": "success", 'name': food_name, 'rating': rating, 'photo_path': file_path})
         else:
             return jsonify({"status": "error", "message": "No file uploaded."})
-    return ''
+    return render_template("form.html")
 
 @APP.route('/create_user')
 def create_user():
