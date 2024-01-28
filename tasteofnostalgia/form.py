@@ -8,6 +8,8 @@ from tasteofnostalgia import food_collection
 from tasteofnostalgia.verify import get_user_id
 from flask_cors import cross_origin
 from bson import Binary
+from datetime import datetime
+import time
 import json
 
 
@@ -15,6 +17,9 @@ import json
 @cross_origin(headers=["Access-Control-Allow-Origin", "*"])
 def userid():
     return f'{get_user_id()}'
+
+def time_to_date(timestamp: int) -> str:
+    return datetime.fromtimestamp(timestamp).strftime("%B %d, %Y")
 
 # A decorator used to tell the application
 # which URL is associated function
@@ -35,6 +40,7 @@ def input_food():
                 'name': food_name,
                 'rating': rating,
                 'photo': file_path,  # Convert file content to BSON Binary
+                'time': int(time.time()),
                 'userId': get_user_id()
             }
 
