@@ -26,6 +26,7 @@ def time_to_date(timestamp: int) -> str:
 @APP.route('/input_food', methods=["GET", "POST"])
 def input_food():
     if request.method == "POST":
+        userId = get_user_id()
         food_name = request.form.get("foodName")
         rating = int(request.form.get("rating"))  # Convert to integer if needed
 
@@ -41,16 +42,16 @@ def input_food():
                 'rating': rating,
                 'photo': file_path,  # Convert file content to BSON Binary
                 'time': int(time.time()),
-                'userId': get_user_id()
+                'userId': userId
             }
 
             # Insert data into MongoDB
             result = food_collection.insert_one(data)
 
             # Return a response with the inserted document ID
-            return jsonify({"status": "success", 'name': food_name, 'rating': rating, 'photo_path': file_path, 'userId': get_user_id()})
+            return jsonify({"status": "success", 'name': food_name, 'rating': rating, 'photo_path': file_path, 'userId': userId})
         else:
-            return jsonify({"status": "error", "message": "No file uploaded.", 'userId': get_user_id()})
+            return jsonify({"status": "error", "message": "No file uploaded.", 'userId': userId})
     return render_template("form.html")
 
 @APP.route('/create_user')
