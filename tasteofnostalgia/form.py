@@ -5,7 +5,14 @@ from tasteofnostalgia import users, APP
 import cohere
 from tasteofnostalgia import users
 from tasteofnostalgia import food_collection
+from tasteofnostalgia.verify import get_user_id
+from flask_cors import cross_origin
 from bson import Binary
+
+@APP.route('/userid')
+@cross_origin(headers=["Access-Control-Allow-Origin", "*"])
+def userid():
+    return f'{get_user_id()}'
 
 # A decorator used to tell the application
 # which URL is associated function

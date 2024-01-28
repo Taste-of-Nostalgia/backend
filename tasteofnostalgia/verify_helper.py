@@ -1,25 +1,14 @@
+from jose import jwt
 from functools import wraps
-import json
-from os import environ as env
-from typing import Dict
+from flask import Flask, request, jsonify, _request_ctx_stack
 
 from six.moves.urllib.request import urlopen
+import json
+from typing import Dict
 
-from dotenv import load_dotenv, find_dotenv
-from flask import Flask, request, jsonify, _request_ctx_stack, Response
+from tasteofnostalgia import AUTH0_DOMAIN, API_IDENTIFIER, ALGORITHMS
 from flask_cors import cross_origin
-from jose import jwt
 
-ENV_FILE = find_dotenv()
-if ENV_FILE:
-    load_dotenv(ENV_FILE)
-AUTH0_DOMAIN = env.get("AUTH0_DOMAIN")
-API_IDENTIFIER = env.get("API_IDENTIFIER")
-ALGORITHMS = ["RS256"]
-APP = Flask(__name__)
-
-
-# Format error response and append status code.
 class AuthError(Exception):
     """
     An AuthError is raised whenever the authentication failed.
@@ -28,19 +17,6 @@ class AuthError(Exception):
         super().__init__()
         self.error = error
         self.status_code = status_code
-
-
-@APP.errorhandler(AuthError)
-def handle_auth_error(ex: AuthError) -> Response:
-    """
-    serializes the given AuthError as json and sets the response status code accordingly.
-    :param ex: an auth error
-    :return: json serialized ex response
-    """
-    response = jsonify(ex.error)
-    response.status_code = ex.status_code
-    return response
-
 
 def get_token_auth_header() -> str:
     """Obtains the access token from the Authorization Header
@@ -69,22 +45,6 @@ def get_token_auth_header() -> str:
 
     token = parts[1]
     return token
-
-
-def requires_scope(required_scope: str) -> bool:
-    """Determines if the required scope is present in the access token
-    Args:
-        required_scope (str): The scope required to access the resource
-    """
-    token = get_token_auth_header()
-    unverified_claims = jwt.get_unverified_claims(token)
-    if unverified_claims.get("scope"):
-        token_scopes = unverified_claims["scope"].split()
-        for token_scope in token_scopes:
-            if token_scope == required_scope:
-                return True
-    return False
-
 
 def requires_auth(func):
     """Determines if the access token is valid
@@ -147,43 +107,57 @@ def requires_auth(func):
 
     return decorated
 
+# Function to validate and decode the JWT
+def get_user_id_from_token(token):
+    try:
+        # Decode the token using Auth0 public key
+        decoded_token = jwt.decode(
+            token,
+            auth0_public_key(),
+            algorithms=ALGORITHMS,
+            audience=API_IDENTIFIER,
+            issuer=f'https://{AUTH0_DOMAIN}/'
+        )
 
-# Controllers API
-@APP.route("/api/public")
-@cross_origin(headers=["Content-Type", "Authorization"])
-def public():
-    """No access token required to access this route
-    """
-    response = "Hello from a public endpoint! You don't need to be authenticated to see this."
-    return jsonify(message=response)
+        # Extract user ID from the decoded token
+        user_id = decoded_token.get('sub')
+        return user_id
+    except jwt.ExpiredSignatureError:
+        return None  # Token has expired
+    # except jwt.InvalidTokenError:
+        # return None  # Token is invalid
 
+# Function to fetch Auth0 public key
+def auth0_public_key():
+    # Fetch Auth0 public key from jwks endpoint
+    # You may need to implement this based on Auth0 documentation
+    # Example: https://auth0.com/docs/quickstart/backend/python/01-authorization
+    # Return the public key associated with the Auth0 API identifier
+    # Ensure you cache the public key for better performance
+    # ...
+    jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+    jwks = json.loads(jsonurl.read())
+    return jwks
 
-@APP.route("/api/private")
-@cross_origin(headers=["Content-Type", "Authorization"])
-@cross_origin(headers=["Access-Control-Allow-Origin", "http://localhost:3000"])
-@requires_auth
-def private():
-    """A valid access token is required to access this route
-    """
-    response = "Hello from a private endpoint! You need to be authenticated to see this."
-    return jsonify(message=response)
+# Your API endpoint requiring authentication
 
+# @APP.route('/secure-endpoint', methods=['GET'])
+# @cross_origin(headers=["Access-Control-Allow-Origin", "*"])
+def get_user_id():
+    # Get the Authorization header from the request
+    authorization_header = request.headers.get('Authorization')
 
-@APP.route("/api/private-scoped")
-@cross_origin(headers=["Content-Type", "Authorization"])
-@cross_origin(headers=["Access-Control-Allow-Origin", "http://localhost:3000"])
-@requires_auth
-def private_scoped():
-    """A valid access token and an appropriate scope are required to access this route
-    """
-    if requires_scope("read:messages"):
-        response = "Hello from a private endpoint! You need to be authenticated and have a scope of read:messages to see this."
-        return jsonify(message=response)
-    raise AuthError({
-        "code": "Unauthorized",
-        "description": "You don't have access to this resource"
-    }, 403)
+    if not authorization_header:
+        return jsonify({"message": "Authorization header is missing"}), 401
 
+    # Extract the token from the header
+    token = authorization_header.split()[1]
 
-if __name__ == "__main__":
-    APP.run(host="0.0.0.0", port=env.get("PORT", 3010), debug=True)
+    # Get the user ID from the token
+    user_id = get_user_id_from_token(token)
+
+    return user_id
+    # if user_id:
+    #     return jsonify({"user_id": user_id, "message": "Access granted"})
+    # else:
+    #     return jsonify({"message": "Invalid or expired token"}), 401
