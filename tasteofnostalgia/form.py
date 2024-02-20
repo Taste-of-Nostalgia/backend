@@ -1,6 +1,6 @@
 
 # importing Flask and other modules
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from tasteofnostalgia import users, APP
 import cohere
 from tasteofnostalgia import users
@@ -11,6 +11,7 @@ from bson import Binary
 from datetime import datetime
 import time
 import json
+from bson import json_util
 
 
 @APP.route('/userid')
@@ -20,6 +21,10 @@ def userid():
 
 def time_to_date(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp).strftime("%B %d, %Y")
+
+@APP.route('/uploads/<path:path>')
+def send_report(path):
+    return send_from_directory('uploads', path)
 
 # A decorator used to tell the application
 # which URL is associated function
@@ -63,12 +68,17 @@ def create_user():
 def get_user():
     return users.find_one({"email": "test@gmail.com", "password":"password"})
 
+@APP.route("/dump-foods", methods=["GET"])
+def dump_foods():
+    results = [result for result in food_collection.find({"userId": get_user_id()})]
+    return json.loads(json_util.dumps(results))
+
 @APP.route("/recommendations", methods=["GET"])
 def recommendation():
     co = cohere.Client('BSnGEJ95ZX7mMUasrq7Au6iFXtfz0VkGXrUOxiD2')
     food = ['Spicy Wontons', 'Subway Sandwich', 'Big Mac', 'Pizza Pizza', 'Ramen Noodles']
     # results = [result for result in food_collection.find({"userId": get_user_id()})]
-    results = [result for result in food_collection.find({"userId": '65b5ae5bcf5539f8e9c1abcb'})]
+    results = [result for result in food_collection.find({"userId": get_user_id()})]
     food_name = []
     ratings = []
     date = []
