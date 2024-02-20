@@ -68,17 +68,18 @@ def recommendation():
     co = cohere.Client('BSnGEJ95ZX7mMUasrq7Au6iFXtfz0VkGXrUOxiD2')
     food = ['Spicy Wontons', 'Subway Sandwich', 'Big Mac', 'Pizza Pizza', 'Ramen Noodles']
     # results = [result for result in food_collection.find({"userId": get_user_id()})]
-    results = [result for result in food_collection.find({"userId": '65b5ae5bcf5539f8e9c1abcb'})]
+    results = [result for result in food_collection.find({"userId": get_user_id()})]
     food_name = []
     ratings = []
     date = []
     for j in range(len(results)):
         food_name.append((results[j])['name'])
         ratings.append((results[j])['rating'])
-        date.append((results[j])['date'])
+        #date.append((results[j])['date'])
+        date.append("January 20, 2022")
     
     info = ''
-    for i in range(len(food)):
+    for i in range(len(results)):
         info += food_name[i] + " - eaten " + date[i] + ": " + str(ratings[i]) + "/5\n"
 
     prompt1 = "Based on this information, what is the number 1 food similar to food that the user has ranked highly and hasn't eaten recently (answer with the symbol #1 followed by the food name: description):\n" + info
